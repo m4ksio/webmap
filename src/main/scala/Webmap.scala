@@ -24,7 +24,9 @@ object Webmap {
   def crawl(url: URL): Unit = {
     implicit val system = ActorSystem()
 
-    val crawlerRef = system.actorOf(Props(classOf[Crawler], url.getHost))
+    val client = new HttpClient(url.getHost)
+
+    val crawlerRef = system.actorOf(Props(classOf[Crawler], client))
 
     implicit val timeout:Timeout = 1 minute
     implicit val dispatcher = system.dispatcher

@@ -12,7 +12,7 @@ sealed trait LinkType
 
 case class StartCrawling(path:String)
 
-class Crawler(host: String) extends Actor {
+class Crawler(httpClient: HttpClient) extends Actor {
 
   case class Crawl(path: String)
   case object Finished
@@ -20,7 +20,7 @@ class Crawler(host: String) extends Actor {
   implicit val system = context.system
   implicit val dispatcher = context.system.dispatcher
 
-  val httpClient = new HttpClient(host)
+//  val httpClient = new HttpClient(host)
   var inProgressCount = 0
   var startSender:ActorRef = _
   val graph = Graph.empty[String, DiEdge]

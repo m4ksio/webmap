@@ -21,9 +21,9 @@ class HttpClient(host: String)(implicit actorSystem: ActorSystem) {
 
   val QueueSize = 100
 
-  private val poolClientFlow = Http().cachedHostConnectionPool[Promise[HttpResponse]](host)
+  private val poolClientFlow = Http().cachedHostConnectionPool[Promise[HttpEntity.Strict]](host)
   private val queue =
-    Source.queue[(HttpRequest, Promise[HttpResponse])](QueueSize, OverflowStrategy.dropNew)
+    Source.queue[(HttpRequest, Promise[HttpEntity.Strict])](QueueSize, OverflowStrategy.dropNew)
       .via(poolClientFlow)
       .toMat(Sink.foreach({
         case ((Success(resp), p)) => resp.entity.toStrict(1 second)
