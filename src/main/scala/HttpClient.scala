@@ -12,7 +12,7 @@ import akka.stream.{ OverflowStrategy, QueueOfferResult }
 import scala.concurrent.duration._
 
 trait HttpClient {
-  def queueRequest(request: HttpRequest): Future[HttpEntity.Strict]
+  def queueRequest(request: HttpRequest): Future[String]
 }
 
 class AkkaHttpClient(host: String)(implicit actorSystem: ActorSystem) extends HttpClient {
@@ -25,19 +25,19 @@ class AkkaHttpClient(host: String)(implicit actorSystem: ActorSystem) extends Ht
 
   val QueueSize = 100
 
-  private val poolClientFlow = Http().cachedHostConnectionPool[Promise[HttpEntity.Strict]](host)
+  private val poolClientFlow = Http().cachedHostConnectionPool[Promise[String]](host)
   private val queue =
-    Source.queue[(HttpRequest, Promise[HttpEntity.Strict])](QueueSize, OverflowStrategy.dropNew)
+    Source.queue[(HttpRequest, Promise[String])](QueueSize, OverflowStrategy.dropNew)
       .via(poolClientFlow)
       .toMat(Sink.foreach({
-        case ((Success(resp), p)) => resp.entity.toStrict(2 second)
+        case ((Success(resp), p)) => resp.entity.toStrict(2 second).map(e => e.data.toString())
         case ((Failure(e), p))    => p.failure(e)
       }))(Keep.left)
       .run()
 
 
-  override def queueRequest(request: HttpRequest): Future[HttpEntity.Strict] = {
-    val responsePromise = Promise[HttpEntity.Strict]()
+  override def queueRequest(request: HttpRequest): Future[String] = {
+    val responsePromise = Promise[String]()
     queue.offer(request -> responsePromise).flatMap {
       case QueueOfferResult.Enqueued    => responsePromise.future
       case QueueOfferResult.Dropped     => Future.failed(new RuntimeException("Queue overflowed. Try again later."))

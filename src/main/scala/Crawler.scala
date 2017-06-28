@@ -13,6 +13,7 @@ sealed trait LinkType
 case class StartCrawling(path:String)
 
 object Crawler {
+  type Webmap = immutable.Graph[String, DiEdge]
   def props(httpClient: HttpClient): Props = {
     Props(classOf[Crawler], httpClient)
   }
