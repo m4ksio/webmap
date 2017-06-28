@@ -15,3 +15,4 @@ libraryDependencies +=  "com.typesafe.akka" %% "akka-http" % "10.0.9"
 libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % "2.5.3" % Test
 
 libraryDependencies += "net.ruippeixotog" %% "scala-scraper" % "2.0.0-RC2"
+libraryDependencies += "org.scalamock" %% "scalamock-scalatest-support" % "3.5.0" % Test

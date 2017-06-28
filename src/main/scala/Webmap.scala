@@ -24,9 +24,9 @@ object Webmap {
   def crawl(url: URL): Unit = {
     implicit val system = ActorSystem()
 
-    val client = new HttpClient(url.getHost)
+    val httpClient = new AkkaHttpClient(url.getHost)
 
-    val crawlerRef = system.actorOf(Props(classOf[Crawler], client))
+    val crawlerRef = system.actorOf(Crawler.props(httpClient))
 
     implicit val timeout:Timeout = 1 minute
     implicit val dispatcher = system.dispatcher

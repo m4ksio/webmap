@@ -1,4 +1,4 @@
-import akka.actor.{Actor, ActorRef}
+import akka.actor.{Actor, ActorRef, Props}
 import akka.http.scaladsl.model.HttpRequest
 
 import scalax.collection.GraphEdge.DiEdge
@@ -11,6 +11,12 @@ import scalax.collection.edge.Implicits._
 sealed trait LinkType
 
 case class StartCrawling(path:String)
+
+object Crawler {
+  def props(httpClient: HttpClient): Props = {
+    Props(classOf[Crawler], httpClient)
+  }
+}
 
 class Crawler(httpClient: HttpClient) extends Actor {
 

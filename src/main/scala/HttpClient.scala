@@ -11,7 +11,11 @@ import akka.stream.{ OverflowStrategy, QueueOfferResult }
 
 import scala.concurrent.duration._
 
-class HttpClient(host: String)(implicit actorSystem: ActorSystem) {
+trait HttpClient {
+  def queueRequest(request: HttpRequest): Future[HttpEntity.Strict]
+}
+
+class AkkaHttpClient(host: String)(implicit actorSystem: ActorSystem) extends HttpClient {
 
   // attributed to
   // http://kazuhiro.github.io/scala/akka/akka-http/akka-streams/2016/01/31/connection-pooling-with-akka-http-and-source-queue.html
@@ -26,12 +30,13 @@ class HttpClient(host: String)(implicit actorSystem: ActorSystem) {
     Source.queue[(HttpRequest, Promise[HttpEntity.Strict])](QueueSize, OverflowStrategy.dropNew)
       .via(poolClientFlow)
       .toMat(Sink.foreach({
-        case ((Success(resp), p)) => resp.entity.toStrict(1 second)
+        case ((Success(resp), p)) => resp.entity.toStrict(2 second)
         case ((Failure(e), p))    => p.failure(e)
       }))(Keep.left)
       .run()
 
-  def queueRequest(request: HttpRequest): Future[HttpEntity.Strict] = {
+
+  override def queueRequest(request: HttpRequest): Future[HttpEntity.Strict] = {
     val responsePromise = Promise[HttpEntity.Strict]()
     queue.offer(request -> responsePromise).flatMap {
       case QueueOfferResult.Enqueued    => responsePromise.future
