@@ -19,7 +19,7 @@ object Crawler {
   }
 }
 
-class Crawler(httpClient: HttpClient) extends Actor {
+class Crawler(httpClient: HttpClient, parser: Parser) extends Actor {
 
   case class Crawl(path: String)
   case object Finished
@@ -53,7 +53,7 @@ class Crawler(httpClient: HttpClient) extends Actor {
 
       // simple reference counting, but works in single-threaded actors
       if (inProgressCount == 0) {
-        startSender ! immutable.Graph(graph.edges)
+        startSender ! immutable.Graph.empty ++ graph
       }
   }
 }
