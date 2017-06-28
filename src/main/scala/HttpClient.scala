@@ -12,7 +12,7 @@ import akka.stream.{ OverflowStrategy, QueueOfferResult }
 import scala.concurrent.duration._
 
 trait HttpClient {
-  def queueRequest(request: HttpRequest): Future[String]
+  def queue(path: String): Future[String]
 }
 
 class AkkaHttpClient(host: String)(implicit actorSystem: ActorSystem) extends HttpClient {
@@ -36,9 +36,9 @@ class AkkaHttpClient(host: String)(implicit actorSystem: ActorSystem) extends Ht
       .run()
 
 
-  override def queueRequest(request: HttpRequest): Future[String] = {
+  override def queue(path: String): Future[String] = {
     val responsePromise = Promise[String]()
-    queue.offer(request -> responsePromise).flatMap {
+    queue.offer(HttpRequest(uri = path) -> responsePromise).flatMap {
       case QueueOfferResult.Enqueued    => responsePromise.future
       case QueueOfferResult.Dropped     => Future.failed(new RuntimeException("Queue overflowed. Try again later."))
       case QueueOfferResult.Failure(ex) => Future.failed(ex)

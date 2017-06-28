@@ -22,10 +22,11 @@ class CrawlerTest extends TestKit(ActorSystem("MySpec")) with ImplicitSender wit
   "Crawler" should "ask base url and return graph" in {
 
       val httpClient = mock[HttpClient]
+      val parser = mock[Parser]
 
-      val crawler = system.actorOf(Crawler.props(httpClient))
+      val crawler = system.actorOf(Crawler.props(httpClient, parser))
 
-    (httpClient.queueRequest _) expects (where {
+    (httpClient.queue _) expects (where {
       request:HttpRequest => {
         request.uri.equals(Uri("/"))
       }
@@ -43,19 +44,37 @@ class CrawlerTest extends TestKit(ActorSystem("MySpec")) with ImplicitSender wit
 
   it should "forward http responses to parser" in {
 
-      val httpClient = mock[HttpClient]
+    val httpClient = stub[HttpClient]
+    val parser = mock[Parser]
+    val input = "Magic string"
 
-      val crawler = system.actorOf(Crawler.props(httpClient))
+    val crawler = system.actorOf(Crawler.props(httpClient, parser))
 
-    (httpClient.queueRequest _) expects(*) onCall {
-      res:HttpRequest => Future.successful("Magic string")
-    }
+    (httpClient.queue _) when(*) returns(Future.successful(input))
+
+    (parser parse _) expects(input)
 
     crawler ! StartCrawling("/")
 
     within(1 second) {
       val webmap = expectMsgClass(classOf[Webmap])
-      assert(webmap.nodes.contains("/"))
+    }
+  }
+
+  it should "issue more http request for urls not already in graph" in {
+
+    val httpClient = stub[HttpClient]
+    val parser = stub[Parser]
+
+    val crawler = system.actorOf(Crawler.props(httpClient, parser))
+
+    (httpClient.queue _) when("/") returns(Future.successful("/_content"))
+    (parser parse _) when("/_content") returns(Seq(""))
+
+    crawler ! StartCrawling("/")
+
+    within(1 second) {
+      val webmap = expectMsgClass(classOf[Webmap])
     }
   }
 }

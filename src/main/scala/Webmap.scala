@@ -25,8 +25,10 @@ object Webmap {
     implicit val system = ActorSystem()
 
     val httpClient = new AkkaHttpClient(url.getHost)
+    val parser = new JSoupParser
 
-    val crawlerRef = system.actorOf(Crawler.props(httpClient))
+
+    val crawlerRef = system.actorOf(Crawler.props(httpClient, parser))
 
     implicit val timeout:Timeout = 1 minute
     implicit val dispatcher = system.dispatcher

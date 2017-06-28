@@ -12,10 +12,11 @@ sealed trait LinkType
 
 case class StartCrawling(path:String)
 
+
 object Crawler {
   type Webmap = immutable.Graph[String, DiEdge]
-  def props(httpClient: HttpClient): Props = {
-    Props(classOf[Crawler], httpClient)
+  def props(httpClient: HttpClient, parser:Parser): Props = {
+    Props(classOf[Crawler], httpClient, parser)
   }
 }
 
@@ -30,6 +31,7 @@ class Crawler(httpClient: HttpClient, parser: Parser) extends Actor {
 //  val httpClient = new HttpClient(host)
   var inProgressCount = 0
   var startSender:ActorRef = _
+
   val graph = Graph.empty[String, DiEdge]
 
 
@@ -42,7 +44,7 @@ class Crawler(httpClient: HttpClient, parser: Parser) extends Actor {
 
     case Crawl(path) =>
       val myself = self
-      httpClient.queueRequest(HttpRequest(uri = path)).map( res => {
+      httpClient.queue(path).map(res => {
 
         myself ! Finished
       })
