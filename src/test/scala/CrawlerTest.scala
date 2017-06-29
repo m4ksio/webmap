@@ -22,17 +22,14 @@ class CrawlerTest extends TestKit(ActorSystem("MySpec")) with ImplicitSender wit
   "Crawler" should "ask base url and return graph" in {
 
       val httpClient = mock[HttpClient]
-      val parser = mock[Parser]
+      val parser = stub[Parser]
 
       val crawler = system.actorOf(Crawler.props(httpClient, parser))
 
-    (httpClient.queue _) expects (where {
-      request:HttpRequest => {
-        request.uri.equals(Uri("/"))
-      }
-    }) onCall {
-      res:HttpRequest => Future.successful("")
+    (httpClient.queue _) expects ("/") onCall {
+      path:String => Future.successful("")
     }
+    (parser.parse _) when(*) returns(Seq())
 
     crawler ! StartCrawling("/")
 
@@ -42,7 +39,7 @@ class CrawlerTest extends TestKit(ActorSystem("MySpec")) with ImplicitSender wit
     }
   }
 
-  it should "forward http responses to parser" in {
+  it should "ask base url and forward http responses to parser" in {
 
     val httpClient = stub[HttpClient]
     val parser = mock[Parser]
@@ -52,7 +49,7 @@ class CrawlerTest extends TestKit(ActorSystem("MySpec")) with ImplicitSender wit
 
     (httpClient.queue _) when(*) returns(Future.successful(input))
 
-    (parser parse _) expects(input)
+    (parser parse _) expects(input) returns(Seq())
 
     crawler ! StartCrawling("/")
 
@@ -63,13 +60,27 @@ class CrawlerTest extends TestKit(ActorSystem("MySpec")) with ImplicitSender wit
 
   it should "issue more http request for urls not already in graph" in {
 
-    val httpClient = stub[HttpClient]
-    val parser = stub[Parser]
+    val httpClient = mock[HttpClient]
+    val parser = mock[Parser]
 
     val crawler = system.actorOf(Crawler.props(httpClient, parser))
 
-    (httpClient.queue _) when("/") returns(Future.successful("/_content"))
-    (parser parse _) when("/_content") returns(Seq(""))
+
+    // / links to /a /b and /c
+    (httpClient.queue _) expects("/") once() returns(Future.successful("/_content"))
+    (parser parse _) expects("/_content") returns(Seq("/a", "/b", "/c"))
+
+    // /a links to /b and /c
+    (httpClient.queue _) expects("/a") once() returns(Future.successful("/a_content"))
+    (parser parse _) expects("/a_content") returns(Seq("/b", "/c"))
+
+    // /b links to /a and c
+    (httpClient.queue _) expects("/b") once() returns(Future.successful("/b_content"))
+    (parser parse _) expects("/b_content") returns(Seq("/a", "/c"))
+
+    // /c links to nowhere
+    (httpClient.queue _) expects("/c") once() returns(Future.successful("/c_content"))
+    (parser parse _) expects("/c_content") returns(Seq())
 
     crawler ! StartCrawling("/")
 

@@ -23,6 +23,7 @@ object Crawler {
 class Crawler(httpClient: HttpClient, parser: Parser) extends Actor {
 
   case class Crawl(path: String)
+  case class ProcessLinks(links: Seq[String])
   case object Finished
 
   implicit val system = context.system
@@ -44,11 +45,25 @@ class Crawler(httpClient: HttpClient, parser: Parser) extends Actor {
 
     case Crawl(path) =>
       val myself = self
-      httpClient.queue(path).map(res => {
+      httpClient.queue(path).map(html => {
+        val links = parser.parse(html)
 
-        myself ! Finished
+        // access mutable field in main actor thread
+        myself ! ProcessLinks(links)
+
+
       })
       inProgressCount += 1
+
+    case ProcessLinks(links) =>
+
+      links.filterNot(graph.nodes.contains(_)).foreach { path =>
+        graph.add(path)
+        self ! Crawl(path)
+      }
+
+      self ! Finished
+
 
     case Finished =>
       inProgressCount -= 1
