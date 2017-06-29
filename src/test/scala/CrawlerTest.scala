@@ -29,7 +29,7 @@ class CrawlerTest extends TestKit(ActorSystem("MySpec")) with ImplicitSender wit
     (httpClient.queue _) expects ("/") onCall {
       path:String => Future.successful("")
     }
-    (parser.parse _) when(*) returns(Seq())
+    (parser.parse _) when(*, *) returns(Seq())
 
     crawler ! StartCrawling("/")
 
@@ -49,7 +49,7 @@ class CrawlerTest extends TestKit(ActorSystem("MySpec")) with ImplicitSender wit
 
     (httpClient.queue _) when(*) returns(Future.successful(input))
 
-    (parser parse _) expects(input) returns(Seq())
+    (parser parse (_,_)) expects(input, *) returns(Seq())
 
     crawler ! StartCrawling("/")
 
@@ -68,19 +68,19 @@ class CrawlerTest extends TestKit(ActorSystem("MySpec")) with ImplicitSender wit
 
     // / links to /a /b and /c
     (httpClient.queue _) expects("/") once() returns(Future.successful("/_content"))
-    (parser parse _) expects("/_content") returns(Seq("/a", "/b", "/c"))
+    (parser parse (_,_)) expects("/_content", *) returns(Seq("/a", "/b", "/c"))
 
     // /a links to /b and /c
     (httpClient.queue _) expects("/a") once() returns(Future.successful("/a_content"))
-    (parser parse _) expects("/a_content") returns(Seq("/b", "/c"))
+    (parser parse (_,_)) expects("/a_content", *) returns(Seq("/b", "/c"))
 
     // /b links to /a and c
     (httpClient.queue _) expects("/b") once() returns(Future.successful("/b_content"))
-    (parser parse _) expects("/b_content") returns(Seq("/a", "/c"))
+    (parser parse (_,_)) expects("/b_content", *) returns(Seq("/a", "/c"))
 
     // /c links to nowhere
     (httpClient.queue _) expects("/c") once() returns(Future.successful("/c_content"))
-    (parser parse _) expects("/c_content") returns(Seq())
+    (parser parse (_,_)) expects("/c_content", *) returns(Seq())
 
     crawler ! StartCrawling("/")
 

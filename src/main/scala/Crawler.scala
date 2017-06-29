@@ -1,6 +1,7 @@
 import akka.actor.{Actor, ActorRef, Props}
 import akka.http.scaladsl.model.HttpRequest
 
+import scala.util.{Failure, Success}
 import scalax.collection.GraphEdge.DiEdge
 import scalax.collection.mutable.Graph
 import scalax.collection.immutable
@@ -23,18 +24,16 @@ object Crawler {
 class Crawler(httpClient: HttpClient, parser: Parser) extends Actor {
 
   case class Crawl(path: String)
-  case class ProcessLinks(links: Seq[String])
+  case class ProcessLinks(from:String, links: Seq[String])
   case object Finished
 
   implicit val system = context.system
   implicit val dispatcher = context.system.dispatcher
 
-//  val httpClient = new HttpClient(host)
   var inProgressCount = 0
   var startSender:ActorRef = _
 
   val graph = Graph.empty[String, DiEdge]
-
 
   override def receive: Receive = {
 
@@ -45,21 +44,27 @@ class Crawler(httpClient: HttpClient, parser: Parser) extends Actor {
 
     case Crawl(path) =>
       val myself = self
-      httpClient.queue(path).map(html => {
-        val links = parser.parse(html)
+      httpClient.queue(path).onComplete {
 
-        // access mutable field in main actor thread
-        myself ! ProcessLinks(links)
+        case Success(html) =>
+          val links = parser.parse(html, path)
 
+          // access mutable field in main actor thread
+          myself ! ProcessLinks(path, links)
 
-      })
+        case Failure(ex) =>
+          System.err.println("Exception while parsing " + ex)
+      }
+
       inProgressCount += 1
 
-    case ProcessLinks(links) =>
+    case ProcessLinks(from, links) =>
 
-      links.filterNot(graph.nodes.contains(_)).foreach { path =>
-        graph.add(path)
-        self ! Crawl(path)
+      links.foreach{ link =>
+        if (!graph.nodes.contains(link)) {
+          self ! Crawl(link)
+        }
+        graph.add( from ~> link)
       }
 
       self ! Finished

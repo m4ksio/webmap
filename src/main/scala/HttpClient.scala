@@ -30,7 +30,7 @@ class AkkaHttpClient(host: String)(implicit actorSystem: ActorSystem) extends Ht
     Source.queue[(HttpRequest, Promise[String])](QueueSize, OverflowStrategy.dropNew)
       .via(poolClientFlow)
       .toMat(Sink.foreach({
-        case ((Success(resp), p)) => resp.entity.toStrict(2 second).map(e => e.data.toString())
+        case ((Success(resp), p)) => p.tryCompleteWith(resp.entity.toStrict(2 second).map(e => e.getData().utf8String))
         case ((Failure(e), p))    => p.failure(e)
       }))(Keep.left)
       .run()
@@ -38,6 +38,7 @@ class AkkaHttpClient(host: String)(implicit actorSystem: ActorSystem) extends Ht
 
   override def queue(path: String): Future[String] = {
     val responsePromise = Promise[String]()
+
     queue.offer(HttpRequest(uri = path) -> responsePromise).flatMap {
       case QueueOfferResult.Enqueued    => responsePromise.future
       case QueueOfferResult.Dropped     => Future.failed(new RuntimeException("Queue overflowed. Try again later."))
