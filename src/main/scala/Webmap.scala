@@ -1,4 +1,4 @@
-import java.io.PrintWriter
+import java.io.{File, PrintWriter}
 import java.net.URL
 
 import Crawler.Webmap
@@ -17,17 +17,17 @@ import scalax.collection.io.dot._
 object Webmap {
 
   def main(args: Array[String]): Unit = {
-    if (args.length != 1) {
-      System.err.println("Missing starting URL parameter")
+    if (args.length != 2) {
+      System.err.println("Arguments: [staring URL] [output_filename]")
       return
     }
-    Try(new URL(args.head)) match {
-      case Success(url) => crawl(url)
+    Try( new URL(args.head), new File(args(1)) ) match {
+      case Success( (url, file) ) => crawl(url, file)
       case Failure(ex) => System.err.println("Invalid starting URL")
     }
   }
 
-  def crawl(url: URL): Unit = {
+  def crawl(url: URL, file:File): Unit = {
 
     val baseUrl = new URL(url, "/")
 
@@ -44,22 +44,21 @@ object Webmap {
 
     crawlerRef.ask(StartCrawling(url.getPath)).mapTo[Webmap].onComplete {
       case Success(graph) =>
-        toDot(graph, baseUrl.getHost)
+        toDot(graph, baseUrl.getHost, file)
         system.terminate()
 
       case Failure(ex) => println("Failed with exception", ex)
         system.terminate()
-
     }
   }
 
-  def toDot(graph: Webmap, baseHost:String): Unit = {
+  def toDot(graph: Webmap, baseHost:String, file:File): Unit = {
 
     import implicits._
 
     val dotRoot = DotRootGraph (
       directed = true,
-      id        = Some("Webmap")
+      id        = Some(baseHost)
     )
 
     def edgeTransformer(innerEdge: Graph[String,DiEdge]#EdgeT): Option[(DotGraph,DotEdgeStmt)] = {
@@ -72,6 +71,6 @@ object Webmap {
 
     var dot = graph.toDot(dotRoot, edgeTransformer)
 
-    new PrintWriter("graph.dot") { write(dot); close }
+    new PrintWriter(file) { write(dot); close }
   }
 }
