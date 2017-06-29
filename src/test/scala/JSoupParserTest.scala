@@ -25,7 +25,7 @@ class JSoupParserTest extends FlatSpec with Matchers {
 
     val strings = parser.parse(html, "/")
 
-    strings should contain allOf("/books/books.html", "/movies/movies.html")
+    strings should contain allOf(InternalLink("/books/books.html"), InternalLink("/movies/movies.html"))
   }
 
   it should "calculate base urls properly deeper in the tree" in {
@@ -46,7 +46,7 @@ class JSoupParserTest extends FlatSpec with Matchers {
 
     val strings = parser.parse(html, "/magic/")
 
-    strings should contain allOf("/magic/books/books.html", "/magic/movies/movies.html")
+    strings should contain allOf(InternalLink("/magic/books/books.html"), InternalLink("/magic/movies/movies.html"))
   }
 
   it should "ignore local hrefs" in {
@@ -64,8 +64,26 @@ class JSoupParserTest extends FlatSpec with Matchers {
     val strings = parser.parse(html, "/magic/")
 
     println(strings)
-    strings should contain("/fixed.html")
+    strings should contain(InternalLink("/fixed.html"))
     strings should have size(1)
+  }
+
+  it should "classify internal and external links" in {
+
+    val html =
+      """<html>
+        |        <a href="/internal.html">Internal</a><
+        |        <a href="http://www.m4ks.io/">External</a>
+        |</html>
+      """.stripMargin
+
+    val parser = new JSoupParser(new URL("http://localhost/"))
+
+    val strings = parser.parse(html, "/magic/")
+
+    println(strings)
+    strings should contain allOf(InternalLink("/internal.html"), ExternalLink("http://www.m4ks.io/"))
+    strings should have size(2)
   }
 
 }

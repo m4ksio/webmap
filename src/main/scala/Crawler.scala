@@ -9,10 +9,7 @@ import scalax.collection.GraphPredef._
 import scalax.collection.edge.LDiEdge
 import scalax.collection.edge.Implicits._
 
-sealed trait LinkType
-
 case class StartCrawling(path:String)
-
 
 object Crawler {
   type Webmap = immutable.Graph[String, DiEdge]
@@ -24,7 +21,7 @@ object Crawler {
 class Crawler(httpClient: HttpClient, parser: Parser) extends Actor {
 
   case class Crawl(path: String)
-  case class ProcessLinks(from:String, links: Seq[String])
+  case class ProcessLinks(from:String, links: Seq[LinkType])
   case object Finished
 
   implicit val system = context.system
@@ -61,10 +58,10 @@ class Crawler(httpClient: HttpClient, parser: Parser) extends Actor {
     case ProcessLinks(from, links) =>
 
       links.foreach{ link =>
-        if (!graph.nodes.contains(link)) {
-          self ! Crawl(link)
+        if (!link.isExternal && !graph.nodes.contains(link.path)) {
+          self ! Crawl(link.path)
         }
-        graph.add( from ~> link)
+        graph.add( from ~> link.path)
       }
 
       self ! Finished
