@@ -1,13 +1,10 @@
 import akka.actor.{Actor, ActorRef, Props}
-import akka.http.scaladsl.model.HttpRequest
 
 import scala.util.{Failure, Success}
 import scalax.collection.GraphEdge.DiEdge
 import scalax.collection.mutable.Graph
 import scalax.collection.immutable
 import scalax.collection.GraphPredef._
-import scalax.collection.edge.LDiEdge
-import scalax.collection.edge.Implicits._
 
 case class StartCrawling(path:String)
 

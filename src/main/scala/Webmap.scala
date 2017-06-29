@@ -2,7 +2,7 @@ import java.io.{File, PrintWriter}
 import java.net.URL
 
 import Crawler.Webmap
-import akka.actor.{ActorSystem, Props}
+import akka.actor.ActorSystem
 
 import scala.util.{Failure, Success, Try}
 import akka.pattern.ask

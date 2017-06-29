@@ -1,17 +1,12 @@
 import Crawler.Webmap
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{ContentType, HttpEntity, HttpRequest, Uri}
 import akka.testkit.{ImplicitSender, TestKit}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest._
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scalax.collection.immutable.Graph
 
-/**
-  * Created by m4ks on 28/06/2017.
-  */
 class CrawlerTest extends TestKit(ActorSystem("MySpec")) with ImplicitSender with FlatSpecLike with Matchers
     with BeforeAndAfterAll with MockFactory {
 

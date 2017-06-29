@@ -1,10 +1,7 @@
 import java.net.URL
 
-import org.scalatest.{FlatSpec, FlatSpecLike, FunSuite, Matchers}
+import org.scalatest.{FlatSpec, Matchers}
 
-/**
-  * Created by m4ks on 29/06/2017.
-  */
 class JSoupParserTest extends FlatSpec with Matchers {
 
   "jsouparser" should "calculate base urls properly" in {
